@@ -15,6 +15,7 @@
 
   /* ── DOM references ── */
   const editor        = document.getElementById("editor");
+  const cssEditor     = document.getElementById("css-editor");
   const previewFrame  = document.getElementById("preview-frame");
   const themeSelect   = document.getElementById("theme-select");
   const loadingBadge  = document.getElementById("loading-badge");
@@ -22,10 +23,12 @@
   const savedBadge    = document.getElementById("saved-badge");
 
   /* ── State ── */
-  const STORAGE_KEY_CONTENT = "rbuilder_content";
-  const STORAGE_KEY_THEME   = "rbuilder_theme";
+  const STORAGE_KEY_CONTENT    = "rbuilder_content";
+  const STORAGE_KEY_THEME      = "rbuilder_theme";
+  const STORAGE_KEY_CUSTOM_CSS = "rbuilder_custom_css";
   let previewDebounceTimer  = null;
   let saveDebounceTimer     = null;
+  let activeTab             = "markdown";
 
   /* ================================================================
      INITIALISATION
@@ -35,26 +38,28 @@
     updateWordCount();
     refreshPreview();          // initial render
     attachListeners();
+    updateCssBadge();
   }
 
   /* ================================================================
      PERSISTENCE  (localStorage)
      ================================================================ */
   function restoreSession() {
-    const savedContent = localStorage.getItem(STORAGE_KEY_CONTENT);
-    const savedTheme   = localStorage.getItem(STORAGE_KEY_THEME);
+    const savedContent   = localStorage.getItem(STORAGE_KEY_CONTENT);
+    const savedTheme     = localStorage.getItem(STORAGE_KEY_THEME);
+    const savedCustomCss = localStorage.getItem(STORAGE_KEY_CUSTOM_CSS);
 
-    if (savedContent !== null) {
-      editor.value = savedContent;
-    }
+    if (savedContent !== null) editor.value = savedContent;
     if (savedTheme && themeSelect.querySelector(`option[value="${savedTheme}"]`)) {
       themeSelect.value = savedTheme;
     }
+    if (savedCustomCss !== null) cssEditor.value = savedCustomCss;
   }
 
   function saveSession() {
-    localStorage.setItem(STORAGE_KEY_CONTENT, editor.value);
-    localStorage.setItem(STORAGE_KEY_THEME, themeSelect.value);
+    localStorage.setItem(STORAGE_KEY_CONTENT,    editor.value);
+    localStorage.setItem(STORAGE_KEY_THEME,      themeSelect.value);
+    localStorage.setItem(STORAGE_KEY_CUSTOM_CSS, cssEditor.value);
     flashSavedBadge();
   }
 
@@ -82,7 +87,8 @@
     try {
       const body = new FormData();
       body.append("markdown_text", editor.value);
-      body.append("theme", themeSelect.value);
+      body.append("theme",         themeSelect.value);
+      body.append("custom_css",    cssEditor.value);
 
       const res  = await fetch("/preview", { method: "POST", body });
       const html = await res.text();
@@ -148,8 +154,14 @@
     themeField.name  = "theme";
     themeField.value = themeSelect.value;
 
+    const cssField = document.createElement("input");
+    cssField.type  = "hidden";
+    cssField.name  = "custom_css";
+    cssField.value = cssEditor.value;
+
     form.appendChild(mdField);
     form.appendChild(themeField);
+    form.appendChild(cssField);
     document.body.appendChild(form);
     form.submit();
     setTimeout(() => document.body.removeChild(form), 500);
@@ -172,25 +184,67 @@
   }
 
   /* ================================================================
+     TAB SWITCHING
+     ================================================================ */
+  function switchTab(tab) {
+    activeTab = tab;
+    const tabs = document.querySelectorAll(".editor-tab");
+    tabs.forEach(btn => {
+      const isActive = btn.dataset.tab === tab;
+      btn.classList.toggle("editor-tab--active", isActive);
+      btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+
+    if (tab === "markdown") {
+      editor.removeAttribute("hidden");
+      cssEditor.setAttribute("hidden", "");
+    } else {
+      editor.setAttribute("hidden", "");
+      cssEditor.removeAttribute("hidden");
+      cssEditor.focus();
+    }
+  }
+
+  function updateCssBadge() {
+    const cssTab = document.querySelector('.editor-tab[data-tab="css"]');
+    if (!cssTab) return;
+    cssTab.classList.toggle("editor-tab--css-active", cssEditor.value.trim().length > 0);
+  }
+
+  /* ================================================================
      EVENT LISTENERS
      ================================================================ */
   function attachListeners() {
-    /* Editor input → debounced preview + save */
+    /* Markdown editor input → debounced preview + save */
     editor.addEventListener("input", () => {
       updateWordCount();
       schedulePreview(380);
       scheduleSave(900);
     });
 
-    /* Tab key → insert spaces instead of losing focus */
-    editor.addEventListener("keydown", (e) => {
-      if (e.key === "Tab") {
-        e.preventDefault();
-        const s = editor.selectionStart;
-        editor.value =
-          editor.value.substring(0, s) + "  " + editor.value.substring(editor.selectionEnd);
-        editor.selectionStart = editor.selectionEnd = s + 2;
-      }
+    /* CSS editor input → debounced preview + save + badge */
+    cssEditor.addEventListener("input", () => {
+      updateCssBadge();
+      schedulePreview(380);
+      scheduleSave(900);
+    });
+
+    /* Tab key → insert spaces in either editor */
+    [editor, cssEditor].forEach(el => {
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Tab") {
+          e.preventDefault();
+          const s = el.selectionStart;
+          el.value = el.value.substring(0, s) + "  " + el.value.substring(el.selectionEnd);
+          el.selectionStart = el.selectionEnd = s + 2;
+        }
+      });
+    });
+
+    /* Editor tab buttons */
+    document.addEventListener("click", (e) => {
+      const tab = e.target.closest(".editor-tab");
+      if (tab) switchTab(tab.dataset.tab);
     });
 
     /* Theme change → immediate refresh */
@@ -199,7 +253,7 @@
       refreshPreview();
     });
 
-    /* Scroll sync */
+    /* Scroll sync (markdown editor only) */
     editor.addEventListener("scroll", syncScroll);
 
     /* Template buttons (delegated) */

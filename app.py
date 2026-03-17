@@ -205,10 +205,12 @@ def _strip_import_rules(css: str) -> str:
     return re.sub(r"@import\s+[^;]+;", "", css)
 
 
-def _build_html(body_html: str, css: str, *, for_print: bool = False) -> str:
+def _build_html(body_html: str, css: str, *, for_print: bool = False, custom_css: str = "") -> str:
     """Wrap rendered Markdown body in a complete HTML document with injected CSS."""
     if for_print:
         css = _strip_import_rules(css)
+        custom_css = _strip_import_rules(custom_css)
+    custom_block = f'<style id="custom-dev-css">{custom_css}</style>' if custom_css.strip() else ""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -218,6 +220,7 @@ def _build_html(body_html: str, css: str, *, for_print: bool = False) -> str:
   <style>
 {css}
   </style>
+  {custom_block}
 </head>
 <body>
 {body_html}
@@ -250,12 +253,13 @@ async def index(request: Request) -> HTMLResponse:
 async def preview(
     markdown_text: str = Form(""),
     theme: str = Form("modern"),
+    custom_css: str = Form(""),
 ) -> HTMLResponse:
     if theme not in AVAILABLE_THEMES:
         theme = "modern"
     body_html = _render_markdown(markdown_text)
     css = _load_theme_css(theme)
-    full_html = _build_html(body_html, css, for_print=False)
+    full_html = _build_html(body_html, css, for_print=False, custom_css=custom_css)
     return HTMLResponse(content=full_html)
 
 
@@ -263,12 +267,13 @@ async def preview(
 async def export_pdf(
     markdown_text: str = Form(...),
     theme: str = Form("modern"),
+    custom_css: str = Form(""),
 ) -> Response:
     if theme not in AVAILABLE_THEMES:
         theme = "modern"
     body_html = _render_markdown(markdown_text)
     css = _load_theme_css(theme)
-    full_html = _build_html(body_html, css, for_print=True)
+    full_html = _build_html(body_html, css, for_print=True, custom_css=custom_css)
 
     pdf_bytes: bytes = weasyprint.HTML(
         string=full_html,

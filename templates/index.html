@@ -103,10 +103,17 @@
   ═══════════════════════════════════════════════════════ -->
   <main class="workspace">
 
-    <!-- Left: Markdown editor -->
+    <!-- Left: Markdown / CSS editor -->
     <section class="pane pane--editor">
       <div class="pane__header">
-        <span>&#9998; Markdown Editor</span>
+        <div class="editor-tabs">
+          <button class="editor-tab editor-tab--active" data-tab="markdown" aria-pressed="true">
+            &#9998; Markdown
+          </button>
+          <button class="editor-tab" data-tab="css" aria-pressed="false">
+            &#9676; CSS
+          </button>
+        </div>
         <span id="word-count" style="font-size:11px;">0 words</span>
       </div>
       <textarea
@@ -117,6 +124,16 @@
         autocapitalize="off"
         placeholder="# Your Name&#10;&#10;Write your resume in Markdown…&#10;&#10;Use the Templates buttons above to load an example."
         aria-label="Markdown editor"
+      ></textarea>
+      <textarea
+        id="css-editor"
+        spellcheck="false"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        placeholder="/* Override or extend the active theme */&#10;&#10;/* Examples: */&#10;body { font-size: 13px; }&#10;&#10;@media print {&#10;  body { margin: 12mm 15mm; }&#10;}"
+        aria-label="Custom CSS editor"
+        hidden
       ></textarea>
     </section>
 
