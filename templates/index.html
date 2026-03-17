@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Resume Builder</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════════
+       TOP BAR
+  ═══════════════════════════════════════════════════════ -->
+  <header class="topbar">
+
+    <!-- Brand -->
+    <div class="topbar__brand">
+      <!-- Feather-style document icon -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      <h1>Resume Builder <span>v1.0</span></h1>
+    </div>
+
+    <!-- Controls -->
+    <div class="topbar__controls">
+
+      <!-- Load templates -->
+      <span style="font-size:12px;color:var(--chrome-muted);">Templates:</span>
+      <button class="btn btn--ghost" data-template="professional">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 7V5a2 2 0 0 0-4 0v2"/>
+          <line x1="12" y1="12" x2="12" y2="16"/>
+          <line x1="10" y1="14" x2="14" y2="14"/>
+        </svg>
+        Professional
+      </button>
+      <button class="btn btn--ghost" data-template="academic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+          <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/>
+        </svg>
+        Academic
+      </button>
+
+      <div class="sep"></div>
+
+      <!-- Theme selector -->
+      <div class="theme-select-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42
+                   M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        Theme:
+        <select id="theme-select" aria-label="Select resume theme">
+          {% for theme in themes %}
+          <option value="{{ theme }}">
+            {{ theme | capitalize }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="sep"></div>
+
+      <!-- Refresh preview -->
+      <button class="btn btn--ghost" id="btn-refresh" title="Refresh preview (Ctrl+Enter)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Refresh
+      </button>
+
+      <!-- Export PDF -->
+      <button class="btn btn--primary" id="btn-export" title="Download as PDF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download PDF
+      </button>
+
+    </div><!-- /topbar__controls -->
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════
+       WORKSPACE  (split pane)
+  ═══════════════════════════════════════════════════════ -->
+  <main class="workspace">
+
+    <!-- Left: Markdown editor -->
+    <section class="pane pane--editor">
+      <div class="pane__header">
+        <span>&#9998; Markdown Editor</span>
+        <span id="word-count" style="font-size:11px;">0 words</span>
+      </div>
+      <textarea
+        id="editor"
+        spellcheck="false"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        placeholder="# Your Name&#10;&#10;Write your resume in Markdown…&#10;&#10;Use the Templates buttons above to load an example."
+        aria-label="Markdown editor"
+      ></textarea>
+    </section>
+
+    <!-- Right: Live HTML preview -->
+    <section class="pane pane--preview">
+      <div class="pane__header">
+        <span>&#128065; Live Preview</span>
+        <span id="loading-badge" aria-live="polite">Rendering…</span>
+      </div>
+      <iframe
+        id="preview-frame"
+        title="Resume preview"
+        sandbox="allow-same-origin"
+        srcdoc="<html><body style='display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#94a3b8;font-size:14px;'>Loading preview…</body></html>"
+      ></iframe>
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════
+       STATUS BAR
+  ═══════════════════════════════════════════════════════ -->
+  <footer class="statusbar">
+    <div class="statusbar__left">
+      <span>Markdown Resume Builder</span>
+      <span>·</span>
+      <span>Session auto-saved to browser storage</span>
+    </div>
+    <div class="statusbar__right">
+      <span id="saved-badge">✓ Saved</span>
+      <span>·</span>
+      <span>PDF: A4 / Letter</span>
+      <span>·</span>
+      <span>Powered by WeasyPrint</span>
+    </div>
+  </footer>
+
+  <script src="/static/editor.js"></script>
+</body>
+</html>
