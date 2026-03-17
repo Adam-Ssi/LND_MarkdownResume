@@ -21,6 +21,7 @@
   const loadingBadge  = document.getElementById("loading-badge");
   const wordCount     = document.getElementById("word-count");
   const savedBadge    = document.getElementById("saved-badge");
+  const btnResetCss   = document.getElementById("btn-reset-css");
 
   /* ── State ── */
   const STORAGE_KEY_CONTENT    = "rbuilder_content";
@@ -184,6 +185,22 @@
   }
 
   /* ================================================================
+     THEME CSS LOADER
+     ================================================================ */
+  async function loadThemeCss() {
+    try {
+      const res = await fetch(`/theme-css/${themeSelect.value}`);
+      if (!res.ok) return;
+      cssEditor.value = await res.text();
+      updateCssBadge();
+      schedulePreview(0);
+      scheduleSave(500);
+    } catch (err) {
+      console.error("Failed to load theme CSS:", err);
+    }
+  }
+
+  /* ================================================================
      TAB SWITCHING
      ================================================================ */
   function switchTab(tab) {
@@ -195,12 +212,15 @@
       btn.setAttribute("aria-pressed", isActive ? "true" : "false");
     });
 
-    if (tab === "markdown") {
-      editor.removeAttribute("hidden");
-      cssEditor.setAttribute("hidden", "");
-    } else {
-      editor.setAttribute("hidden", "");
-      cssEditor.removeAttribute("hidden");
+    const onCss = tab === "css";
+    editor.toggleAttribute("hidden", onCss);
+    cssEditor.toggleAttribute("hidden", !onCss);
+    wordCount.style.display    = onCss ? "none"         : "";
+    btnResetCss.style.display  = onCss ? "inline-flex"  : "none";
+
+    if (onCss) {
+      /* Auto-populate from theme if editor is empty */
+      if (!cssEditor.value.trim()) loadThemeCss();
       cssEditor.focus();
     }
   }
@@ -247,10 +267,17 @@
       if (tab) switchTab(tab.dataset.tab);
     });
 
-    /* Theme change → immediate refresh */
+    /* Reset to theme button */
+    btnResetCss.addEventListener("click", loadThemeCss);
+
+    /* Theme change → refresh preview; if on CSS tab, reload theme CSS */
     themeSelect.addEventListener("change", () => {
       localStorage.setItem(STORAGE_KEY_THEME, themeSelect.value);
-      refreshPreview();
+      if (activeTab === "css") {
+        loadThemeCss();   // pulls new theme CSS, triggers preview inside
+      } else {
+        refreshPreview();
+      }
     });
 
     /* Scroll sync (markdown editor only) */

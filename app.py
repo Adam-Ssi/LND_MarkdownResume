@@ -206,11 +206,14 @@ def _strip_import_rules(css: str) -> str:
 
 
 def _build_html(body_html: str, css: str, *, for_print: bool = False, custom_css: str = "") -> str:
-    """Wrap rendered Markdown body in a complete HTML document with injected CSS."""
+    """Wrap rendered Markdown body in a complete HTML document with injected CSS.
+
+    If custom_css is provided it fully replaces the theme CSS, giving the dev
+    complete control.  An empty custom_css falls back to the theme file.
+    """
+    active_css = custom_css.strip() if custom_css.strip() else css
     if for_print:
-        css = _strip_import_rules(css)
-        custom_css = _strip_import_rules(custom_css)
-    custom_block = f'<style id="custom-dev-css">{custom_css}</style>' if custom_css.strip() else ""
+        active_css = _strip_import_rules(active_css)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -218,9 +221,8 @@ def _build_html(body_html: str, css: str, *, for_print: bool = False, custom_css
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Resume</title>
   <style>
-{css}
+{active_css}
   </style>
-  {custom_block}
 </head>
 <body>
 {body_html}
@@ -285,6 +287,13 @@ async def export_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=resume.pdf"},
     )
+
+
+@app.get("/theme-css/{name}")
+async def get_theme_css(name: str) -> Response:
+    if name not in AVAILABLE_THEMES:
+        raise HTTPException(status_code=404, detail=f"Theme '{name}' not found")
+    return Response(content=_load_theme_css(name), media_type="text/plain")
 
 
 @app.get("/template/{name}")
