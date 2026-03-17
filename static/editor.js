@@ -22,11 +22,13 @@
   const wordCount     = document.getElementById("word-count");
   const savedBadge    = document.getElementById("saved-badge");
   const btnResetCss   = document.getElementById("btn-reset-css");
+  const redactToggle  = document.getElementById("redact-toggle");
 
   /* ── State ── */
   const STORAGE_KEY_CONTENT    = "rbuilder_content";
   const STORAGE_KEY_THEME      = "rbuilder_theme";
   const STORAGE_KEY_CUSTOM_CSS = "rbuilder_custom_css";
+  const STORAGE_KEY_REDACT     = "rbuilder_redact";
   let previewDebounceTimer  = null;
   let saveDebounceTimer     = null;
   let activeTab             = "markdown";
@@ -49,18 +51,21 @@
     const savedContent   = localStorage.getItem(STORAGE_KEY_CONTENT);
     const savedTheme     = localStorage.getItem(STORAGE_KEY_THEME);
     const savedCustomCss = localStorage.getItem(STORAGE_KEY_CUSTOM_CSS);
+    const savedRedact    = localStorage.getItem(STORAGE_KEY_REDACT);
 
     if (savedContent !== null) editor.value = savedContent;
     if (savedTheme && themeSelect.querySelector(`option[value="${savedTheme}"]`)) {
       themeSelect.value = savedTheme;
     }
     if (savedCustomCss !== null) cssEditor.value = savedCustomCss;
+    if (savedRedact === "1") redactToggle.checked = true;
   }
 
   function saveSession() {
     localStorage.setItem(STORAGE_KEY_CONTENT,    editor.value);
     localStorage.setItem(STORAGE_KEY_THEME,      themeSelect.value);
     localStorage.setItem(STORAGE_KEY_CUSTOM_CSS, cssEditor.value);
+    localStorage.setItem(STORAGE_KEY_REDACT,     redactToggle.checked ? "1" : "0");
     flashSavedBadge();
   }
 
@@ -90,6 +95,7 @@
       body.append("markdown_text", editor.value);
       body.append("theme",         themeSelect.value);
       body.append("custom_css",    cssEditor.value);
+      body.append("redact",        redactToggle.checked ? "true" : "false");
 
       const res  = await fetch("/preview", { method: "POST", body });
       const html = await res.text();
@@ -160,9 +166,15 @@
     cssField.name  = "custom_css";
     cssField.value = cssEditor.value;
 
+    const redactField = document.createElement("input");
+    redactField.type  = "hidden";
+    redactField.name  = "redact";
+    redactField.value = redactToggle.checked ? "true" : "false";
+
     form.appendChild(mdField);
     form.appendChild(themeField);
     form.appendChild(cssField);
+    form.appendChild(redactField);
     document.body.appendChild(form);
     form.submit();
     setTimeout(() => document.body.removeChild(form), 500);
@@ -269,6 +281,12 @@
 
     /* Reset to theme button */
     btnResetCss.addEventListener("click", loadThemeCss);
+
+    /* Redact toggle → immediate preview refresh + save */
+    redactToggle.addEventListener("change", () => {
+      localStorage.setItem(STORAGE_KEY_REDACT, redactToggle.checked ? "1" : "0");
+      refreshPreview();
+    });
 
     /* Theme change → refresh preview; if on CSS tab, reload theme CSS */
     themeSelect.addEventListener("change", () => {

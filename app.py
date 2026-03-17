@@ -230,6 +230,47 @@ def _build_html(body_html: str, css: str, *, for_print: bool = False, custom_css
 </html>"""
 
 
+def _redact_pii(text: str) -> str:
+    """Replace common PII patterns with placeholders."""
+    # Email addresses
+    text = re.sub(
+        r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}",
+        "[email redacted]",
+        text,
+    )
+    # Phone numbers — covers (555) 234-5678 / +1-555-234-5678 / 555.234.5678 etc.
+    text = re.sub(
+        r"(\+?\d[\d\s\-().]{6,}\d)",
+        "[phone redacted]",
+        text,
+    )
+    # Inline location labels  e.g. "**Location:** New York, NY"
+    text = re.sub(
+        r"(?i)(location\s*[:\|]\s*)[^\n|*]+",
+        r"\1[location redacted]",
+        text,
+    )
+    # Bare "City, ST" / "City, Country" patterns (2–3 word city, 2-letter state or full country)
+    text = re.sub(
+        r"\b([A-Z][a-zA-Z\s]{1,20}),\s*([A-Z]{2}|[A-Z][a-z]{3,})\b",
+        "[location redacted]",
+        text,
+    )
+    # LinkedIn profile URLs
+    text = re.sub(
+        r"linkedin\.com/in/[A-Za-z0-9\-_%]+",
+        "linkedin.com/in/[redacted]",
+        text,
+    )
+    # GitHub profile URLs
+    text = re.sub(
+        r"github\.com/[A-Za-z0-9\-_%]+(?!/)",   # user URL, not repo path
+        "github.com/[redacted]",
+        text,
+    )
+    return text
+
+
 def _render_markdown(text: str) -> str:
     return str(markdown2.markdown(text, extras=MARKDOWN_EXTRAS))
 
@@ -256,9 +297,12 @@ async def preview(
     markdown_text: str = Form(""),
     theme: str = Form("modern"),
     custom_css: str = Form(""),
+    redact: bool = Form(False),
 ) -> HTMLResponse:
     if theme not in AVAILABLE_THEMES:
         theme = "modern"
+    if redact:
+        markdown_text = _redact_pii(markdown_text)
     body_html = _render_markdown(markdown_text)
     css = _load_theme_css(theme)
     full_html = _build_html(body_html, css, for_print=False, custom_css=custom_css)
@@ -270,9 +314,12 @@ async def export_pdf(
     markdown_text: str = Form(...),
     theme: str = Form("modern"),
     custom_css: str = Form(""),
+    redact: bool = Form(False),
 ) -> Response:
     if theme not in AVAILABLE_THEMES:
         theme = "modern"
+    if redact:
+        markdown_text = _redact_pii(markdown_text)
     body_html = _render_markdown(markdown_text)
     css = _load_theme_css(theme)
     full_html = _build_html(body_html, css, for_print=True, custom_css=custom_css)
