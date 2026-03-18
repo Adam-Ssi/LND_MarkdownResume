@@ -30,6 +30,12 @@
   --statusbar-h:  26px;
   --font-ui:      'Inter', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  /* Glassmorphism */
+  --glass-bg:     rgba(15, 23, 42, 0.55);
+  --glass-brd:    rgba(148, 163, 184, 0.12);
+  --glass-blur:   18px;
+  --glass-srf:    rgba(30, 41, 59, 0.45);
 }
 
 /* ── Layout ── */
@@ -42,6 +48,23 @@ html, body {
   background:  var(--chrome-bg);
 }
 
+/* Animated mesh gradient behind all glass surfaces */
+body::before {
+  content:    "";
+  position:   fixed;
+  inset:      0;
+  z-index:    0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%,  rgba(59,130,246,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 80%,  rgba(139,92,246,0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 40% at 50% 100%, rgba(6,182,212,0.10)  0%, transparent 55%),
+    var(--chrome-bg);
+  pointer-events: none;
+}
+
+/* Everything above the gradient */
+.topbar, .workspace, .statusbar { position: relative; z-index: 1; }
+
 /* ─────────────────────────────────────────
    TOP BAR
 ───────────────────────────────────────── */
@@ -52,8 +75,10 @@ html, body {
   gap:              12px;
   height:           var(--bar-h);
   padding:          0 18px;
-  background:       var(--chrome-bg);
-  border-bottom:    1px solid var(--chrome-brd);
+  background:       var(--glass-bg);
+  backdrop-filter:  blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border-bottom:    1px solid var(--glass-brd);
   flex-shrink:      0;
   user-select:      none;
 }
@@ -107,14 +132,16 @@ html, body {
 .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
 .btn--ghost {
-  background:   transparent;
+  background:   var(--glass-srf);
   color:        var(--chrome-muted);
-  border-color: var(--chrome-brd);
+  border-color: var(--glass-brd);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .btn--ghost:hover {
-  background:   var(--chrome-srf);
+  background:   rgba(51, 65, 85, 0.6);
   color:        var(--chrome-txt);
-  border-color: var(--chrome-muted);
+  border-color: rgba(148,163,184,0.25);
 }
 
 .btn--primary {
@@ -200,9 +227,11 @@ html, body {
 }
 .theme-select-wrap select {
   appearance:   none;
-  background:   var(--chrome-srf);
+  background:   var(--glass-srf);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color:        var(--chrome-txt);
-  border:       1px solid var(--chrome-brd);
+  border:       1px solid var(--glass-brd);
   border-radius: 6px;
   padding:      5px 30px 5px 10px;
   font-size:    12.5px;
@@ -240,8 +269,10 @@ html, body {
   align-items:     center;
   justify-content: space-between;
   padding:         6px 16px;
-  background:      var(--chrome-srf);
-  border-bottom:   1px solid var(--chrome-brd);
+  background:      var(--glass-srf);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border-bottom:   1px solid var(--glass-brd);
   font-size:       11.5px;
   font-weight:     500;
   color:           var(--chrome-muted);
@@ -360,7 +391,10 @@ html, body {
   justify-content: space-between;
   height:          var(--statusbar-h);
   padding:         0 16px;
-  background:      var(--accent);
+  background:      rgba(37, 99, 235, 0.45);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border-top:      1px solid rgba(59,130,246,0.25);
   font-size:       11.5px;
   color:           rgba(255,255,255,0.9);
   user-select:     none;
