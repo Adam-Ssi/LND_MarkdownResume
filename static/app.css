@@ -32,10 +32,10 @@
   --font-mono:    'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
 
   /* Glassmorphism */
-  --glass-bg:     rgba(15, 23, 42, 0.55);
-  --glass-brd:    rgba(148, 163, 184, 0.12);
-  --glass-blur:   18px;
-  --glass-srf:    rgba(30, 41, 59, 0.45);
+  --glass-bg:     rgba(15, 23, 42, 0.35);
+  --glass-brd:    rgba(148, 163, 184, 0.20);
+  --glass-blur:   24px;
+  --glass-srf:    rgba(30, 41, 59, 0.30);
 }
 
 /* ── Layout ── */
@@ -55,9 +55,9 @@ body::before {
   inset:      0;
   z-index:    0;
   background:
-    radial-gradient(ellipse 80% 60% at 10% 20%,  rgba(59,130,246,0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 90% 80%,  rgba(139,92,246,0.14) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 40% at 50% 100%, rgba(6,182,212,0.10)  0%, transparent 55%),
+    radial-gradient(ellipse 70% 55% at 5%  15%,  rgba(59,130,246,0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 50% at 95% 85%,  rgba(139,92,246,0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 45% at 55% 105%, rgba(6,182,212,0.35)  0%, transparent 55%),
     var(--chrome-bg);
   pointer-events: none;
 }
