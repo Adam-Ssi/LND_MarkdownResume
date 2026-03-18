@@ -23,12 +23,16 @@
   const savedBadge    = document.getElementById("saved-badge");
   const btnResetCss   = document.getElementById("btn-reset-css");
   const redactToggle  = document.getElementById("redact-toggle");
+  const kbToggle      = document.getElementById("kb-sound-toggle");
+  const kbSwitchType  = document.getElementById("kb-switch-type");
 
   /* ── State ── */
   const STORAGE_KEY_CONTENT    = "rbuilder_content";
   const STORAGE_KEY_THEME      = "rbuilder_theme";
   const STORAGE_KEY_CUSTOM_CSS = "rbuilder_custom_css";
   const STORAGE_KEY_REDACT     = "rbuilder_redact";
+  const STORAGE_KEY_KB_SOUND   = "rbuilder_kb_sound";
+  const STORAGE_KEY_KB_TYPE    = "rbuilder_kb_type";
   let previewDebounceTimer  = null;
   let saveDebounceTimer     = null;
   let activeTab             = "markdown";
@@ -38,6 +42,7 @@
      ================================================================ */
   function init() {
     restoreSession();
+    restoreKbSound();
     updateWordCount();
     refreshPreview();          // initial render
     attachListeners();
@@ -244,9 +249,90 @@
   }
 
   /* ================================================================
+     KEYBOARD SOUNDS  (Web Audio API synthesis — no audio files)
+     ================================================================ */
+  let audioCtx = null;
+
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || /** @type {any} */ (window).webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function playClick(type) {
+    const ctx      = getAudioCtx();
+    const now      = ctx.currentTime;
+    const isBlue   = type === "blue";
+
+    // Noise buffer (10ms of white noise)
+    const bufLen   = Math.floor(ctx.sampleRate * 0.01);
+    const buffer   = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data     = buffer.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
+
+    function burst(startTime, gain, filterFreq, duration) {
+      const src    = ctx.createBufferSource();
+      src.buffer   = buffer;
+
+      const filt   = ctx.createBiquadFilter();
+      filt.type    = "bandpass";
+      filt.frequency.value = filterFreq;
+      filt.Q.value = isBlue ? 0.8 : 0.5;
+
+      const amp    = ctx.createGain();
+      amp.gain.setValueAtTime(gain, startTime);
+      amp.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+      src.connect(filt);
+      filt.connect(amp);
+      amp.connect(ctx.destination);
+      src.start(startTime);
+      src.stop(startTime + duration);
+    }
+
+    if (isBlue) {
+      // Blue: sharp high-freq actuation click + quieter reset click ~20ms later
+      burst(now,        0.55, 4800, 0.028);
+      burst(now + 0.02, 0.30, 3800, 0.022);
+    } else {
+      // Brown: single softer mid-freq tactile bump
+      burst(now, 0.35, 2200, 0.030);
+    }
+  }
+
+  function updateKbSwitchVisibility() {
+    kbSwitchType.classList.toggle("visible", kbToggle.checked);
+  }
+
+  function restoreKbSound() {
+    const on   = localStorage.getItem(STORAGE_KEY_KB_SOUND) === "1";
+    const type = localStorage.getItem(STORAGE_KEY_KB_TYPE) || "blue";
+    kbToggle.checked    = on;
+    kbSwitchType.value  = type;
+    updateKbSwitchVisibility();
+  }
+
+  /* ================================================================
      EVENT LISTENERS
      ================================================================ */
   function attachListeners() {
+    /* Keyboard sounds — fire on keydown for tightest timing */
+    [editor, cssEditor].forEach(el => {
+      el.addEventListener("keydown", () => {
+        if (kbToggle.checked) playClick(kbSwitchType.value);
+      });
+    });
+
+    /* KB sound toggle */
+    kbToggle.addEventListener("change", () => {
+      localStorage.setItem(STORAGE_KEY_KB_SOUND, kbToggle.checked ? "1" : "0");
+      updateKbSwitchVisibility();
+    });
+
+    /* KB switch type */
+    kbSwitchType.addEventListener("change", () => {
+      localStorage.setItem(STORAGE_KEY_KB_TYPE, kbSwitchType.value);
+    });
+
     /* Markdown editor input → debounced preview + save */
     editor.addEventListener("input", () => {
       updateWordCount();

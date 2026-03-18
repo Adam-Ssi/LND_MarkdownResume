@@ -164,6 +164,62 @@ body::before {
   border-color: var(--danger);
 }
 
+/* ── Keyboard sound toggle ── */
+.kb-toggle {
+  display:     flex;
+  align-items: center;
+  gap:         7px;
+  cursor:      pointer;
+  user-select: none;
+}
+.kb-toggle input { display: none; }
+
+.kb-toggle__track {
+  position:      relative;
+  width:         32px;
+  height:        18px;
+  background:    var(--chrome-brd);
+  border-radius: 999px;
+  transition:    background 0.2s;
+  flex-shrink:   0;
+}
+.kb-toggle__thumb {
+  position:      absolute;
+  top:           3px;
+  left:          3px;
+  width:         12px;
+  height:        12px;
+  background:    #fff;
+  border-radius: 50%;
+  transition:    transform 0.2s;
+}
+.kb-toggle input:checked ~ .kb-toggle__track { background: var(--accent); }
+.kb-toggle input:checked ~ .kb-toggle__track .kb-toggle__thumb { transform: translateX(14px); }
+
+.kb-toggle__label {
+  font-size:  12.5px;
+  color:      var(--chrome-muted);
+  transition: color 0.2s;
+}
+.kb-toggle:has(input:checked) .kb-toggle__label {
+  color:       var(--accent);
+  font-weight: 600;
+}
+
+.kb-switch-select {
+  appearance:    none;
+  background:    var(--chrome-srf);
+  color:         var(--chrome-txt);
+  border:        1px solid var(--chrome-brd);
+  border-radius: 5px;
+  padding:       3px 8px;
+  font-size:     11.5px;
+  font-family:   var(--font-ui);
+  cursor:        pointer;
+  display:       none;   /* shown via JS when toggle is on */
+}
+.kb-switch-select.visible { display: inline-block; }
+
 /* ── PII Redact toggle ── */
 .redact-toggle {
   display:     flex;
