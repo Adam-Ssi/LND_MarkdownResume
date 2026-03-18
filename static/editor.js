@@ -35,7 +35,6 @@
   const STORAGE_KEY_KB_TYPE    = "rbuilder_kb_type";
   let previewDebounceTimer  = null;
   let saveDebounceTimer     = null;
-  let activeTab             = "markdown";
 
   /* ================================================================
      INITIALISATION
@@ -44,6 +43,7 @@
     restoreSession();
     restoreKbSound();
     updateWordCount();
+    updateVibe();
     refreshPreview();          // initial render
     attachListeners();
     updateCssBadge();
@@ -218,10 +218,94 @@
   }
 
   /* ================================================================
+     VIBE ANALYZER  (client-side NLP)
+     ================================================================ */
+  const VIBE_WORDS = {
+    power: [
+      "led","built","launched","drove","grew","created","delivered","achieved",
+      "spearheaded","championed","transformed","engineered","designed","scaled",
+      "optimized","increased","reduced","saved","generated","negotiated","secured",
+      "implemented","established","pioneered","streamlined","accelerated","initiated",
+      "revamped","overhauled","mentored","recruited","closed","exceeded","surpassed"
+    ],
+    academic: [
+      "research","analysis","methodology","publication","dissertation","hypothesis",
+      "framework","peer-reviewed","findings","literature","study","examined","evaluated",
+      "investigated","theoretical","empirical","citation","reviewed","proposed","concluded",
+      "demonstrated","observed","conducted","journal","conference","proceedings"
+    ],
+    aggressive: [
+      "best","top","greatest","number one","#1","world-class","elite","unmatched",
+      "unstoppable","crushing","dominating","killer","disruptive","game-changing",
+      "revolutionary","unprecedented","extraordinary","exceptional","outstanding"
+    ],
+    passive: [
+      "responsible for","assisted with","helped with","worked on","involved in",
+      "participated in","contributed to","supported","tasked with","assigned to",
+      "was part of","collaborated on"
+    ],
+  };
+
+  function analyzeVibe(text) {
+    if (text.trim().length < 30) return null;
+
+    const lower   = text.toLowerCase();
+    const words   = lower.match(/\b\w+\b/g) || [];
+    const total   = Math.max(words.length, 1);
+
+    // Count passive-voice constructions ("was/were/has been/have been + past participle")
+    const passivePattern = /\b(was|were|is|are|has been|have been|had been)\s+\w+ed\b/g;
+    const passiveMatches = (lower.match(passivePattern) || []).length;
+
+    function score(list) {
+      return list.reduce((n, phrase) => {
+        const re = new RegExp(`\\b${phrase.replace(/\s+/g, "\\s+")}\\b`, "g");
+        return n + (lower.match(re) || []).length;
+      }, 0);
+    }
+
+    const powerScore      = score(VIBE_WORDS.power)      / total * 100;
+    const academicScore   = score(VIBE_WORDS.academic)   / total * 100;
+    const aggressiveScore = score(VIBE_WORDS.aggressive)  / total * 100;
+    const passiveScore    = (score(VIBE_WORDS.passive) + passiveMatches) / total * 100;
+
+    // Determine dominant vibe
+    if (aggressiveScore > 1.2)                          return "aggressive";
+    if (academicScore   > powerScore * 1.4)             return "academic";
+    if (passiveScore    > 1.0 && powerScore < 1.5)      return "passive";
+    if (powerScore      > 2.5)                          return "confident";
+    if (powerScore      > 0.8 && passiveScore < 0.6)    return "balanced";
+    if (passiveScore    > 0.5)                          return "passive";
+    return "balanced";
+  }
+
+  const VIBE_LABELS = {
+    confident:  "Confident",
+    academic:   "Academic",
+    aggressive: "Aggressive",
+    passive:    "Passive",
+    balanced:   "Balanced",
+  };
+
+  function updateVibe() {
+    const gauge = document.getElementById("vibe-gauge");
+    const label = document.getElementById("vibe-label");
+    if (!gauge || !label) return;
+
+    const vibe = analyzeVibe(editor.value);
+    if (!vibe) {
+      gauge.removeAttribute("data-vibe");
+      label.textContent = "—";
+      return;
+    }
+    gauge.dataset.vibe  = vibe;
+    label.textContent   = VIBE_LABELS[vibe];
+  }
+
+  /* ================================================================
      TAB SWITCHING
      ================================================================ */
   function switchTab(tab) {
-    activeTab = tab;
     const tabs = document.querySelectorAll(".editor-tab");
     tabs.forEach(btn => {
       const isActive = btn.dataset.tab === tab;
@@ -336,6 +420,7 @@
     /* Markdown editor input → debounced preview + save */
     editor.addEventListener("input", () => {
       updateWordCount();
+      updateVibe();
       schedulePreview(380);
       scheduleSave(900);
     });

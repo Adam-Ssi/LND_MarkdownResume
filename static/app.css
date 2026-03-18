@@ -428,6 +428,58 @@ body::before {
 #css-editor::-webkit-scrollbar-thumb { background: var(--chrome-brd); border-radius: 3px; }
 #css-editor[hidden] { display: none; }
 
+/* ── Vibe gauge ── */
+.vibe-gauge {
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  padding:     2px 9px;
+  border-radius: 999px;
+  border:      1px solid var(--chrome-brd);
+  background:  rgba(255,255,255,0.04);
+  font-size:   11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition:  border-color 0.4s, background 0.4s;
+  cursor:      default;
+}
+
+.vibe-gauge__dot {
+  width:         7px;
+  height:        7px;
+  border-radius: 50%;
+  background:    var(--chrome-brd);
+  flex-shrink:   0;
+  transition:    background 0.4s;
+}
+
+.vibe-gauge__label {
+  color: var(--chrome-muted);
+  transition: color 0.4s;
+}
+
+/* Per-vibe colour themes */
+.vibe-gauge[data-vibe="confident"]  { border-color: rgba(34,197,94,0.4);  background: rgba(34,197,94,0.07);  }
+.vibe-gauge[data-vibe="confident"]  .vibe-gauge__dot   { background: #22c55e; }
+.vibe-gauge[data-vibe="confident"]  .vibe-gauge__label { color: #22c55e; }
+
+.vibe-gauge[data-vibe="academic"]   { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.07); }
+.vibe-gauge[data-vibe="academic"]   .vibe-gauge__dot   { background: #8b5cf6; }
+.vibe-gauge[data-vibe="academic"]   .vibe-gauge__label { color: #8b5cf6; }
+
+.vibe-gauge[data-vibe="aggressive"] { border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
+.vibe-gauge[data-vibe="aggressive"] .vibe-gauge__dot   { background: #ef4444; }
+.vibe-gauge[data-vibe="aggressive"] .vibe-gauge__label { color: #ef4444; }
+
+.vibe-gauge[data-vibe="passive"]    { border-color: rgba(234,179,8,0.4);  background: rgba(234,179,8,0.07);  }
+.vibe-gauge[data-vibe="passive"]    .vibe-gauge__dot   { background: #eab308; }
+.vibe-gauge[data-vibe="passive"]    .vibe-gauge__label { color: #eab308; }
+
+.vibe-gauge[data-vibe="balanced"]   { border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.07); }
+.vibe-gauge[data-vibe="balanced"]   .vibe-gauge__dot   { background: #3b82f6; }
+.vibe-gauge[data-vibe="balanced"]   .vibe-gauge__label { color: #3b82f6; }
+
 /* ── Preview pane ── */
 .pane--preview { background: var(--preview-bg); }
 
