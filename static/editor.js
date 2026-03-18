@@ -288,14 +288,12 @@
       refreshPreview();
     });
 
-    /* Theme change → refresh preview; if on CSS tab, reload theme CSS */
+    /* Theme change → always reload theme CSS into editor + refresh preview.
+       This ensures the new theme is applied whether the user is on the
+       Markdown or CSS tab, and keeps the CSS editor in sync. */
     themeSelect.addEventListener("change", () => {
       localStorage.setItem(STORAGE_KEY_THEME, themeSelect.value);
-      if (activeTab === "css") {
-        loadThemeCss();   // pulls new theme CSS, triggers preview inside
-      } else {
-        refreshPreview();
-      }
+      loadThemeCss();
     });
 
     /* Scroll sync (markdown editor only) */
