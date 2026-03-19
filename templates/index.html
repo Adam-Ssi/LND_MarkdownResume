@@ -110,6 +110,17 @@
         Refresh
       </button>
 
+      <!-- Find Matching Jobs -->
+      <button class="btn btn--jobs" id="btn-find-jobs" title="Find jobs matching your resume">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          <path d="M8 11h6M11 8v6"/>
+        </svg>
+        Find Jobs
+      </button>
+
       <!-- Export PDF -->
       <button class="btn btn--primary" id="btn-export" title="Download as PDF">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -203,6 +214,76 @@
       <span>Powered by WeasyPrint</span>
     </div>
   </footer>
+
+  <!-- ══════════════════════════════════════════════════════
+       JOB FEED DRAWER
+  ═══════════════════════════════════════════════════════ -->
+  <aside id="job-feed" class="job-feed" aria-label="Job matches panel" aria-hidden="true">
+
+    <!-- Drawer header -->
+    <div class="job-feed__header">
+      <div class="job-feed__title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 7V5a2 2 0 0 0-4 0v2"/>
+        </svg>
+        Job Matches
+      </div>
+      <div class="job-feed__controls">
+        <label class="job-feed__filter-label" for="job-location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </label>
+        <select id="job-location" class="job-feed__location-select" aria-label="Filter by location">
+          <option value="Philippines">Philippines</option>
+          <option value="Remote">Remote</option>
+          <option value="Manila">Manila</option>
+          <option value="Cebu">Cebu</option>
+          <option value="Singapore">Singapore</option>
+          <option value="Australia">Australia</option>
+          <option value="United States">United States</option>
+        </select>
+        <button class="job-feed__refresh btn btn--ghost" id="btn-job-refresh" title="Re-run search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </button>
+        <button class="job-feed__close" id="btn-close-jobs" aria-label="Close job feed">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Query badge -->
+    <div class="job-feed__query-bar" id="job-query-bar" hidden>
+      Searching for: <span id="job-query-text"></span>
+    </div>
+
+    <!-- Status / spinner -->
+    <div class="job-feed__status" id="job-status">
+      <div class="job-feed__spinner"></div>
+      <span id="job-status-text">Analysing your resume…</span>
+    </div>
+
+    <!-- Job cards list -->
+    <div class="job-feed__list" id="job-list" hidden></div>
+
+    <!-- Manual fallback URLs -->
+    <div class="job-feed__manual" id="job-manual" hidden>
+      <p class="job-feed__manual-title">Open a pre-filled job search:</p>
+      <div class="job-feed__manual-links" id="job-manual-links"></div>
+    </div>
+
+  </aside>
 
   <script src="/static/editor.js"></script>
 </body>

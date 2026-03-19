@@ -3,6 +3,7 @@ Markdown Resume Builder — FastAPI backend
 """
 from __future__ import annotations
 
+import asyncio
 import re
 from pathlib import Path
 
@@ -13,6 +14,12 @@ from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+try:
+    from job_hunter import find_matching_jobs as _find_matching_jobs
+    _JOB_HUNTER_OK = True
+except ImportError:
+    _JOB_HUNTER_OK = False
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -349,6 +356,20 @@ async def get_template(name: str) -> JSONResponse:
     if content is None:
         raise HTTPException(status_code=404, detail=f"Template '{name}' not found")
     return JSONResponse({"content": content})
+
+
+@app.post("/find-jobs")
+async def find_jobs(
+    markdown_text: str = Form(...),
+    location: str = Form("Philippines"),
+) -> JSONResponse:
+    if not _JOB_HUNTER_OK:
+        raise HTTPException(
+            status_code=503,
+            detail="Job hunter dependencies not installed. Run: pip install httpx beautifulsoup4",
+        )
+    result = await asyncio.to_thread(_find_matching_jobs, markdown_text, location)
+    return JSONResponse(result)
 
 
 @app.get("/health")

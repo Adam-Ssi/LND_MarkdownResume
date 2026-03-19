@@ -475,9 +475,158 @@
       const btn = e.target.closest("[data-template]");
       if (btn) loadTemplate(btn.dataset.template);
 
-      if (e.target.closest("#btn-export")) downloadPDF();
-      if (e.target.closest("#btn-refresh")) refreshPreview();
+      if (e.target.closest("#btn-export"))       downloadPDF();
+      if (e.target.closest("#btn-refresh"))      refreshPreview();
+      if (e.target.closest("#btn-find-jobs"))    runJobSearch();
+      if (e.target.closest("#btn-close-jobs"))   closeJobFeed();
+      if (e.target.closest("#btn-job-refresh"))  runJobSearch();
     });
+
+    /* Location filter change → re-run search if drawer is open */
+    if (jobLocation) {
+      jobLocation.addEventListener("change", () => {
+        if (jobFeed.classList.contains("job-feed--open")) runJobSearch();
+      });
+    }
+  }
+
+  /* ================================================================
+     JOB FEED
+     ================================================================ */
+  const jobFeed         = document.getElementById("job-feed");
+  const jobList         = document.getElementById("job-list");
+  const jobStatus       = document.getElementById("job-status");
+  const jobStatusText   = document.getElementById("job-status-text");
+  const jobQueryBar     = document.getElementById("job-query-bar");
+  const jobQueryText    = document.getElementById("job-query-text");
+  const jobManual       = document.getElementById("job-manual");
+  const jobManualLinks  = document.getElementById("job-manual-links");
+  const jobLocation     = document.getElementById("job-location");
+
+  function openJobFeed() {
+    jobFeed.classList.add("job-feed--open");
+    jobFeed.setAttribute("aria-hidden", "false");
+  }
+
+  function closeJobFeed() {
+    jobFeed.classList.remove("job-feed--open");
+    jobFeed.setAttribute("aria-hidden", "true");
+  }
+
+  function setJobLoading(msg = "Searching for matching jobs…") {
+    jobStatus.hidden     = false;
+    jobList.hidden       = true;
+    jobManual.hidden     = true;
+    jobQueryBar.hidden   = true;
+    jobStatusText.textContent = msg;
+  }
+
+  function matchClass(pct) {
+    if (pct >= 50) return "job-card__match--high";
+    if (pct >= 25) return "job-card__match--mid";
+    return "job-card__match--low";
+  }
+
+  function renderJobCard(job) {
+    const pct = job.match_pct || 0;
+    const pctLabel = pct > 0 ? `${pct}% Match` : "—";
+    const card = document.createElement("article");
+    card.className = "job-card";
+    card.innerHTML = `
+      <div class="job-card__top">
+        <span class="job-card__title">${_esc(job.title)}</span>
+        <span class="job-card__match ${matchClass(pct)}">${pctLabel}</span>
+      </div>
+      <div class="job-card__meta">
+        <span class="job-card__company">${_esc(job.company || "—")}</span>
+        <span class="job-card__location">${_esc(job.location || "—")}</span>
+      </div>
+      <div class="job-card__footer">
+        <span class="job-card__source">${_esc(job.source)}</span>
+        ${job.url
+          ? `<a class="job-card__apply" href="${_esc(job.url)}" target="_blank" rel="noopener noreferrer">Apply ↗</a>`
+          : ""}
+      </div>`;
+    return card;
+  }
+
+  function renderManualLinks(urls) {
+    jobManualLinks.innerHTML = "";
+    const icons = {
+      jobstreet: "🏢",
+      linkedin:  "💼",
+      indeed:    "🔍",
+    };
+    Object.entries(urls).forEach(([key, url]) => {
+      const a = document.createElement("a");
+      a.className = "job-feed__manual-link";
+      a.href      = url;
+      a.target    = "_blank";
+      a.rel       = "noopener noreferrer";
+      a.textContent = `${icons[key] || "🔗"} ${key.charAt(0).toUpperCase() + key.slice(1)}`;
+      jobManualLinks.appendChild(a);
+    });
+  }
+
+  function _esc(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function runJobSearch() {
+    openJobFeed();
+    setJobLoading("Analysing your resume…");
+
+    const body = new FormData();
+    body.append("markdown_text", editor.value);
+    body.append("location", jobLocation ? jobLocation.value : "Philippines");
+
+    try {
+      jobStatusText.textContent = "Fetching live job listings…";
+      const res  = await fetch("/find-jobs", { method: "POST", body });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+
+      // Show query badge
+      const { title = "", skills = [] } = data.query || {};
+      const queryStr = [title, ...skills].filter(Boolean).join(" · ");
+      if (queryStr) {
+        jobQueryText.textContent = queryStr;
+        jobQueryBar.hidden = false;
+      }
+
+      // Show manual links
+      if (data.manual_urls && Object.keys(data.manual_urls).length) {
+        renderManualLinks(data.manual_urls);
+        jobManual.hidden = false;
+      }
+
+      // Render job cards
+      jobStatus.hidden = true;
+      jobList.innerHTML = "";
+
+      if (!data.jobs || data.jobs.length === 0) {
+        jobList.innerHTML = `
+          <div class="job-feed__empty">
+            No live results were scraped (the sites may have blocked the request).<br>
+            Use the manual search links below to browse jobs directly.
+          </div>`;
+      } else {
+        data.jobs.forEach(job => jobList.appendChild(renderJobCard(job)));
+      }
+      jobList.hidden = false;
+
+    } catch (err) {
+      jobStatus.hidden = false;
+      jobList.hidden   = true;
+      jobStatusText.textContent = `Error: ${err.message}`;
+    }
   }
 
   /* ── Boot ── */
